@@ -2,7 +2,7 @@
 # Default Options
 BRANCH="master"
 MSF_ROOT="/opt/metasploit/apps/pro/msf3"
-REV=$(curl -s 'https://api.github.com/repos/gen0cide-/sawed_off/commits' | head -n 3 | tail -n 1 | sed 's/\s//g; s/"//g; s/://g; s/,//g;' | sed 's/^.\{37\}//;')
+REV=$(curl -s 'https://api.github.com/repos/gen0cide-/sawed_off/commits' | head -n 3 | tail -n 1 | sed 's/\s//g; s/"//g; s/://g; s/,//g; s/^sha//; s/.\{31\}//;')
 # -------------------------------------------------------------------------------------------------
 # Option Parser
 for i in "$@"
@@ -34,7 +34,7 @@ echo "######################################################################"
 echo "#                                    - Alex Levinson                  "
 echo "#                                    - Joshua Perrymon                "
 echo "#                                                                     "
-echo "#                                    - Revision: $REV              "
+echo "#                                    - Revision: $REV           "
 echo "#---------------------------------------------------------------------"
 echo "[*]  Sawed Off Branch: $BRANCH"
 echo "[*] Metasploit Prefix: $MSF_ROOT"
