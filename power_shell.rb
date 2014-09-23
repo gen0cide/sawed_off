@@ -143,8 +143,8 @@ Ref: https://github.com/HarmJ0y/PowerUp
 }
 
   @@command_opts = Rex::Parser::Arguments.new(
-    "-o" => [false, "Select a location to send command output to."],
-    "-t" => [false, "The arguments to pass to the command."],
+    "-o" => [true, "Select a location to send command output to."],
+    "-t" => [true, "The arguments to pass to the command."],
     "-h" => [false, "Help menu."]
   )
 
