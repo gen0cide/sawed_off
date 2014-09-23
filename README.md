@@ -8,9 +8,10 @@ Simply:
 ```
 Then you have the commands:
 
- * `power_shell`
- * `power_view`
- * `power_up`
+ * `power_shell` - Invoke a power shell command.
+ * `power_view` - Veil PowerView framework.
+ * `power_up` - Harmj0y PowerUp framework.
+ * `power_katz` - Run Mimikatz from memory.
  
 From within Meterpreter.
 
