@@ -33,8 +33,8 @@ echo "###############################"
 echo "#               - Alex Levinson"
 echo "#             - Joshua Perrymon"
 echo "#------------------------------"
-echo "[o]  Sawed Off Branch: $BRANCH"
-echo "[o] Metasploit Prefix: $MSF_ROOT"
+echo "[*]  Sawed Off Branch: $BRANCH"
+echo "[*] Metasploit Prefix: $MSF_ROOT"
 echo "#------------------------------"
 # -------------------------------------------------------------------------------------------------
 # Variable Setting
@@ -51,13 +51,13 @@ fi
 # -------------------------------------------------------------------------------------------------
 # Pull patches
 if patch_one=$(curl -w '%{size_download}' -s -o $INC_CLASS $INC_CLASS_REM); then
-  echo "[*] (1/2) Patches applied. ($patch_one)"
+  echo "[*] (1/2) Patches applied. ($patch_one Bytes)"
 else
   echo "[!] Patch 1 of 2 failed to download. Check your -b/--branch option."
   exit 1
 fi
 if patch_two=$(curl -w '%{size_download}' -s -o $CLASS_FILE $CLASS_FILE_REM); then
-  echo "[*] (2/2) Patches applied. ($patch_two)"
+  echo "[*] (2/2) Patches applied. ($patch_two Bytes)"
 else
   echo "[!] Patch 2 of 2 failed to download. Check your -b/--branch option."
   exit 1
