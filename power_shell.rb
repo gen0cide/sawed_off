@@ -162,6 +162,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
     output_file = nil
     c_time      = 10
     @@command_opts.parse(args) do |opt, idx, val|
+      print_debug("OPT FOUND: #{opt}=#{val}")
       case opt
       when '-o'
         output_file = val
@@ -171,6 +172,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
           print_warning("Output timeout: #{val} seconds")
         rescue
           print_error "#{val} is not a valid Integer."
+          c_time = 10
         end
       when '-h'
         print_line(POWER_SHELL_USAGE)
