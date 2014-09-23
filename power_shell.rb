@@ -162,7 +162,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
     output_file = nil
     c_time      = 10
     @@command_opts.parse(args) do |opt, idx, val|
-      print_debug("OPT FOUND: #{opt}=#{val}")
+      print_warning("OPT FOUND: #{opt}=#{val}")
       case opt
       when '-o'
         output_file = val
