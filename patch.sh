@@ -1,3 +1,67 @@
-curl -o /opt/metasploit/apps/pro/msf3/lib/rex/post/meterpreter/ui/console/command_dispatcher/priv.rb 'https://raw.githubusercontent.com/gen0cide-/sawed_off/master/priv.rb'
-curl -o /opt/metasploit/apps/pro/msf3/lib/rex/post/meterpreter/ui/console/command_dispatcher/priv/power_shell.rb 'https://raw.githubusercontent.com/gen0cide-/sawed_off/master/power_shell.rb'
-echo "[*] Patched."
+# -------------------------------------------------------------------------------------------------
+# Default Options
+BRANCH="master"
+MSF_ROOT="/opt/metasploit/apps/pro/msf3"
+# -------------------------------------------------------------------------------------------------
+# Option Parser
+for i in "$@"
+do
+  case $i in
+    -b=*|--branch=*)
+      BRANCH=$(echo $i | sed 's/[-a-zA-Z0-9]*=//')
+      ;;
+    -p=*|--prefix=*)
+      MSF_ROOT=$(echo $i | sed 's/[-a-zA-Z0-9]*=//' | sed 's/\/$//;')
+      ;;
+    -h|--help)
+      echo "OPTIONS:"
+      echo "b/--branch BRANCH   -> Branch to patch from.   (Default = master)"
+      echo "p/--prefix DIR      -> Location of Metasploit. (Default = /opt/metasploit/apps/pro/msf3)"
+      exit 0
+      ;;
+    *)
+      echo "[!] Unknown option: $i"
+      echo "[!] For help, use the -h/--help flags."
+      ;;
+  esac
+done
+# -------------------------------------------------------------------------------------------------
+# Banner & GFX
+echo "###############################"
+echo "###    \$awed Off Patcher    ###"
+echo "###############################"
+echo "#               - Alex Levinson"
+echo "#             - Joshua Perrymon"
+echo "#------------------------------"
+echo "[o]  Sawed Off Branch: $BRANCH"
+echo "[o] Metasploit Prefix: $MSF_ROOT"
+echo "#------------------------------"
+# -------------------------------------------------------------------------------------------------
+# Variable Setting
+INC_CLASS="${MSF_ROOT%%/}/lib/rex/post/meterpreter/ui/console/command_dispatcher/priv.rb"
+CLASS_FILE="${MSF_ROOT%%/}/lib/rex/post/meterpreter/ui/console/command_dispatcher/priv/power_shell.rb"
+INC_CLASS_REM="https://raw.githubusercontent.com/gen0cide-/sawed_off/$BRANCH/priv.rb"
+CLASS_FILE_REM="https://raw.githubusercontent.com/gen0cide-/sawed_off/$BRANCH/power_shell.rb"
+# -------------------------------------------------------------------------------------------------
+# Test for metasploit install
+if [ ! -f $INC_CLASS ]; then
+  echo "[!] Required metasploit libraries were not found. Please check your -p/--prefix option."
+  exit 1
+fi
+# -------------------------------------------------------------------------------------------------
+# Pull patches
+if curl -s -o $INC_CLASS $INC_CLASS_REM; then
+  echo "[*] (1/2) Patches applied."
+else
+  echo "[!] Patch 1 of 2 failed to download. Check your -b/--branch option."
+  exit 1
+fi
+if curl -s -o $CLASS_FILE $CLASS_FILE_REM; then
+  echo "[*] (2/2) Patches applied."
+else
+  echo "[!] Patch 2 of 2 failed to download. Check your -b/--branch option."
+  exit 1
+fi
+# -------------------------------------------------------------------------------------------------
+echo "[*] Your Metasploit installation has been successfully patched."
+# -------------------------------------------------------------------------------------------------
