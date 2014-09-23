@@ -2,7 +2,7 @@
 # Default Options
 BRANCH="master"
 MSF_ROOT="/opt/metasploit/apps/pro/msf3"
-REV=$(curl -s 'https://api.github.com/repos/gen0cide-/sawed_off/commits' | head -n 3 | tail -n 1 | sed 's/\s//g; s/"//g; s/://g; s/,//g; s/^sha//; s/.\{33\}//;')
+REV=$(curl -s 'https://api.github.com/repos/gen0cide-/sawed_off/commits' | head -n 3 | tail -n 1 | sed 's/\s//g; s/"//g; s/://g; s/,//g; s/^sha//; s/.\{33\}$//;')
 # -------------------------------------------------------------------------------------------------
 # Option Parser
 for i in "$@"
