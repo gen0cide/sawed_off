@@ -50,14 +50,14 @@ if [ ! -f $INC_CLASS ]; then
 fi
 # -------------------------------------------------------------------------------------------------
 # Pull patches
-if curl -s -o $INC_CLASS $INC_CLASS_REM; then
-  echo "[*] (1/2) Patches applied."
+if patch_one=$(curl -w '%{size_download}' -s -o $INC_CLASS $INC_CLASS_REM); then
+  echo "[*] (1/2) Patches applied. ($patch_one)"
 else
   echo "[!] Patch 1 of 2 failed to download. Check your -b/--branch option."
   exit 1
 fi
-if curl -s -o $CLASS_FILE $CLASS_FILE_REM; then
-  echo "[*] (2/2) Patches applied."
+if patch_two=$(curl -w '%{size_download}' -s -o $CLASS_FILE $CLASS_FILE_REM); then
+  echo "[*] (2/2) Patches applied. ($patch_two)"
 else
   echo "[!] Patch 2 of 2 failed to download. Check your -b/--branch option."
   exit 1
