@@ -29,6 +29,21 @@ class Console::CommandDispatcher::Priv::PowerShell
     }
   end
 
+  POWER_VIEW_USAGE = %q{
+
+Command => Explaination
+=======================
+
+Get-HostIP => It retrieves the local IP of the target.
+
+}
+
+  @@command_opts = Rex::Parser::Arguments.new(
+    "-o" => [false, "Select a location to send command output to."],
+    "-t" => [false, "The arguments to pass to the command."],
+    "-h" => [false, "Help menu."]
+  )
+
   #
   # Name for this dispatcher.
   #
@@ -60,7 +75,28 @@ class Console::CommandDispatcher::Priv::PowerShell
     return true
   end
 
-  def cmd_power_view(*args)    
+  def cmd_power_view(*args)
+    output_file = nil
+    c_time      = 10
+    @@command_opts.parse(args) do |opt, idx, val|
+      case opt
+      when '-o'
+        output_file = val
+      when '-t'
+        begin
+          c_time = Integer(val)
+        rescue
+          print_error "#{val} is not a valid Integer."
+        end
+      when '-h'
+        print_line(POWER_VIEW_USAGE)
+        print_line("-" * 60)
+        print("Usage: power_view [-t TIME] [-o FILE] COMMAND\n" +
+              "Runs the Veil PowerView framework on the remote host.\n" +
+              @@command_opts.usage)
+        return true
+      end
+    end
     link = 'https://raw.githubusercontent.com/Veil-Framework/Veil-PowerView/master/powerview.ps1'
     output  = "#{rand(100000)}"
     ps_cmd  = args.join(" ")
