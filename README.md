@@ -28,6 +28,7 @@ Once you have metasploit patched, when you enter a `meterpreter>` prompt, you ha
  * `power_view` - Veil PowerView framework.
  * `power_up` - Harmj0y PowerUp framework.
  * `power_katz` - Run Mimikatz from memory.
+ * `power_scan` - In Memory NMap implementation.
  
 To see a help doc for any of these commands, just append `-h` to any of them.
 
